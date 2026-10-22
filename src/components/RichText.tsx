@@ -1,7 +1,10 @@
 import katex from 'katex'
 
+// $...$ en línea y $$...$$ en bloque. Dentro de una fórmula, \$ es un signo peso.
+const MATH = /(\$\$(?:\\[\s\S]|[^\\])+?\$\$|\$(?:\\[\s\S]|[^$\\])+\$)/g
+
 export function RichText({ text }: { text: string }) {
-  const parts = text.split(/(\$\$[\s\S]+?\$\$|\$[^$]+?\$)/g)
+  const parts = text.split(MATH)
   return (
     <>
       {parts.map((part, i) => {

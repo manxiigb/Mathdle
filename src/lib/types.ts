@@ -5,6 +5,7 @@ export type Problem = {
   statement: string
   answer_type: 'number' | 'text'
   max_attempts: number
+  has_hint: boolean
 }
 
 export type Attempt = {
@@ -12,7 +13,6 @@ export type Attempt = {
   answer_given: string
   correct: boolean
   feedback: string | null
-  hint: string | null
 }
 
 export type SubmitResult = {
@@ -21,7 +21,6 @@ export type SubmitResult = {
   feedback: string
   finished: boolean
   attempts_left: number
-  hint: string | null
   solution: string | null
   explanation: string | null
 }

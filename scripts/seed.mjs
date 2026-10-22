@@ -1,5 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { createClient } from '@supabase/supabase-js'
+import * as yaml from 'js-yaml'
+
 
 // ---------- Argumentos ----------
 const args = process.argv.slice(2)
@@ -7,7 +9,7 @@ const flag = (name) => args.includes(`--${name}`)
 const opt = (name, def) =>
   args.find((a) => a.startsWith(`--${name}=`))?.split('=')[1] ?? def
 
-const file = opt('file', 'data/problems.json')
+const file = opt('file', 'data/problems.yaml')
 const dryRun = flag('dry-run')
 const force = flag('force')
 
@@ -26,10 +28,27 @@ if (!/^\d{4}-\d{2}-\d{2}$/.test(start)) {
 }
 
 // ---------- Leer y validar ----------
-const raw = JSON.parse(readFileSync(file, 'utf8'))
+let raw
+try {
+  raw = yaml.load(readFileSync(file, 'utf8'))
+} catch (e) {
+  console.error(`Error leyendo ${file}:\n${e.message}`)
+  process.exit(1)
+}
 if (!Array.isArray(raw) || raw.length === 0) {
   console.error(`${file} debe ser un arreglo con al menos un problema`)
   process.exit(1)
+}
+
+const CONTROL = /[\u0000-\u0009\u000b\u000c\u000e-\u001f]/
+function checkText(n, field, s) {
+  if (!s) return
+  if (CONTROL.test(s)) {
+    errors.push(`#${n}: "${field}" tiene un carácter de control (¿un \\frac, \\times o \\beta que YAML se comió?)`)
+  }
+  if (s.includes('\\\\')) {
+    console.warn(`#${n}: "${field}" tiene una doble barra invertida; ¿era intencional?`)
+  }
 }
 
 const errors = []
@@ -39,7 +58,12 @@ const items = raw.map((p, i) => {
   let answer = String(p.answer ?? '').trim()
   const looksNumeric = answer !== '' && Number.isFinite(Number(answer.replace(',', '.')))
   const answer_type = p.answer_type ?? (looksNumeric ? 'number' : 'text')
-  const hints = p.hints ?? []
+  const hint = String(p.hint ?? p.hints?.[0] ?? '').trim() || null
+  checkText(n, 'statement', statement)
+  checkText(n, 'answer', answer)
+  checkText(n, 'hint', hint)
+  checkText(n, 'title', p.title)
+  checkText(n, 'explanation', p.explanation)
   const max_attempts = p.max_attempts ?? 5
 
   if (!statement) errors.push(`#${n}: falta "statement"`)
@@ -49,13 +73,11 @@ const items = raw.map((p, i) => {
     answer = answer.replace(',', '.')
     if (!Number.isFinite(Number(answer))) errors.push(`#${n}: la respuesta no es un número`)
   }
-  if (!Array.isArray(hints)) errors.push(`#${n}: "hints" debe ser un arreglo`)
-  else if (hints.length > max_attempts - 1) {
-    console.warn(`#${n}: tiene ${hints.length} pistas pero solo se verán ${max_attempts - 1}`)
-  }
+  if (hint && max_attempts < 4) console.warn(`#${n}: con menos de 4 casillas la pista nunca se podrá usar`)
 
   return {
-    n, statement, answer, answer_type, hints, max_attempts,
+    n, statement, answer, answer_type, hint, max_attempts,
+    has_hint: hint !== null,
     title: p.title ?? null,
     tolerance: p.tolerance ?? 0,
     explanation: p.explanation ?? null,
@@ -110,8 +132,8 @@ try {
   const { data: rows, error } = await supabase
     .from('problems')
     .upsert(
-      toWrite.map(({ publish_date, title, statement, answer_type, max_attempts }) => ({
-        publish_date, title, statement, answer_type, max_attempts,
+      toWrite.map(({ publish_date, title, statement, answer_type, max_attempts, has_hint }) => ({
+        publish_date, title, statement, answer_type, max_attempts, has_hint,
       })),
       { onConflict: 'publish_date' }
     )
@@ -123,7 +145,7 @@ try {
     problem_id: idByDate.get(it.publish_date),
     answer: it.answer,
     tolerance: it.tolerance,
-    hints: it.hints,
+    hint: it.hint,
     explanation: it.explanation,
   }))
 

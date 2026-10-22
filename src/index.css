@@ -1,1 +1,55 @@
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/fraunces";
 @import "tailwindcss";
+
+@theme {
+  --font-display: "Fraunces Variable", ui-serif, Georgia, serif;
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+
+  --color-night: #0e1226;
+  --color-card: #171b36;
+  --color-card-2: #20264a;
+  --color-edge: #2c3363;
+  --color-chalk: #eef0fb;
+  --color-dust: #9ba1c9;
+  --color-gold: #f4b942;
+  --color-mint: #34d399;
+  --color-ash: #4b5280;
+}
+
+@layer base {
+  html { color-scheme: dark; background: var(--color-night); }
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background-color: var(--color-night);
+    background-image: radial-gradient(60rem 28rem at 50% -8rem, rgb(244 185 66 / 0.12), transparent 70%);
+    background-repeat: no-repeat;
+    color: var(--color-chalk);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button { cursor: pointer; touch-action: manipulation; }
+}
+
+.katex { font-size: 1.08em; }
+
+@keyframes pop {
+  0% { transform: scale(.94); opacity: 0; }
+  60% { transform: scale(1.03); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@keyframes sheet {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+.anim-pop { animation: pop .28s ease-out; }
+.anim-sheet { animation: sheet .25s ease-out; }
+.caret {
+  display: inline-block; width: 2px; height: 1.2em; margin-left: 2px;
+  vertical-align: text-bottom; background: var(--color-gold);
+  animation: blink 1s steps(1) infinite;
+}

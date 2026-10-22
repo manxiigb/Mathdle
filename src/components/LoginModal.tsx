@@ -1,78 +1,113 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { supabase } from '../lib/supabase'
+import { cleanUsername, usernameError, usernameToEmail } from '../lib/username'
+import { Modal } from './Modal'
+
+const input =
+  'w-full rounded-2xl border border-edge bg-night px-4 py-3 text-base text-chalk outline-none placeholder:text-dust focus:border-gold'
 
 export function LoginModal({ onClose }: { onClose: () => void }) {
   const [mode, setMode] = useState<'signup' | 'signin'>('signup')
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
-
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    setBusy(true)
     setError(null)
 
     if (mode === 'signup') {
-      const { data, error } = await supabase.auth.signUp({ email, password })
-      setBusy(false)
-      if (error) return setError(error.message)
-      if (!data.session) return setError('Cuenta creada. Revisa tu correo para confirmarla.')
-    } else {
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
-      setBusy(false)
-      if (error) return setError(error.message)
+      const invalid = usernameError(username)
+      if (invalid) return setError(invalid)
     }
-    onClose()
+
+    setBusy(true)
+    try {
+      if (mode === 'signup') {
+        const name = cleanUsername(username)
+        const { data, error } = await supabase.auth.signUp({
+          email: await usernameToEmail(name),
+          password,
+          options: { data: { username: name } },
+        })
+        if (error) {
+          const taken = error.code === 'user_already_exists' || /already|registered/i.test(error.message)
+          return setError(taken ? 'Ese nombre ya está en uso. Prueba con otro.' : error.message)
+        }
+        if (!data.session) return setError('No se pudo crear la cuenta. Inténtalo de nuevo.')
+      } else {
+        const id = username.trim()
+        // Las cuentas antiguas creadas con correo siguen entrando con su correo
+        const email = id.includes('@') ? id : await usernameToEmail(id)
+        const { error } = await supabase.auth.signInWithPassword({ email, password })
+        if (error) {
+          return setError(
+            /invalid/i.test(error.message) ? 'Nombre o contraseña incorrectos.' : error.message
+          )
+        }
+      }
+      onClose()
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
-      <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <h2 className="mb-1 text-xl font-bold">
-          {mode === 'signup' ? 'Crear cuenta' : 'Iniciar sesión'}
-        </h2>
-        <p className="mb-4 text-sm text-neutral-600">
-          Guarda tu racha y tu historial. No es obligatorio para jugar.
-        </p>
-
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <input
-            className="w-full rounded-lg border p-2.5 text-base"
-            type="email" placeholder="correo" required autoComplete="email"
-            value={email} onChange={(e) => setEmail(e.target.value)}
-          />
-          <input
-            className="w-full rounded-lg border p-2.5 text-base"
-            type="password" placeholder="contraseña (mín. 6)" required minLength={6}
-            autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-            value={password} onChange={(e) => setPassword(e.target.value)}
-          />
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <button
-            type="submit" disabled={busy}
-            className="w-full rounded-lg bg-black py-2.5 font-medium text-white disabled:opacity-50"
-          >
-            {busy ? '...' : mode === 'signup' ? 'Crear cuenta' : 'Entrar'}
-          </button>
-        </form>
-
+    <Modal title={mode === 'signup' ? 'Crear cuenta' : 'Iniciar sesión'} onClose={onClose}>
+      <p className="mb-4 text-sm text-dust">
+        {mode === 'signup'
+          ? 'Elige el nombre que quieras: será tu usuario y es único. Guarda tu racha y tu historial.'
+          : 'Entra con tu nombre de usuario y tu contraseña.'}
+      </p>
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <input
+          className={input}
+          type="text"
+          placeholder="Nombre de usuario"
+          required
+          maxLength={mode === 'signup' ? 20 : undefined}
+          autoComplete="username"
+          autoCorrect="off"
+          spellCheck={false}
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
+        <input
+          className={input}
+          type="password"
+          placeholder="Contraseña (mín. 6)"
+          required
+          minLength={6}
+          autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        {error && <p className="text-sm text-red-400">{error}</p>}
         <button
-          className="mt-3 w-full text-sm text-neutral-600 underline"
-          onClick={() => { setMode(mode === 'signup' ? 'signin' : 'signup'); setError(null) }}
+          type="submit"
+          disabled={busy}
+          className="w-full rounded-2xl bg-gold py-3 font-semibold text-night disabled:opacity-50"
         >
-          {mode === 'signup' ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Créala'}
+          {busy ? '…' : mode === 'signup' ? 'Crear cuenta' : 'Entrar'}
         </button>
-        <button className="mt-2 w-full text-sm text-neutral-500" onClick={onClose}>
-          Seguir como invitado
-        </button>
-      </div>
-    </div>
+      </form>
+
+      {mode === 'signup' && (
+        <p className="mt-3 text-xs text-dust/80">
+          Sin correo no hay recuperación de contraseña: guárdala bien.
+        </p>
+      )}
+
+      <button
+        className="mt-4 w-full text-sm text-dust underline"
+        onClick={() => { setMode(mode === 'signup' ? 'signin' : 'signup'); setError(null) }}
+      >
+        {mode === 'signup' ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Créala'}
+      </button>
+      <button className="mt-2 w-full text-sm text-dust/70" onClick={onClose}>
+        Seguir como invitado
+      </button>
+    </Modal>
   )
 }
