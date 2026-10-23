@@ -165,7 +165,7 @@ export function Game({ sessionKey, isGuest, onNeedAccount }: Props) {
           <span className="text-dust">{dateLabel}</span>
         </div>
         {problem.title && <h2 className="font-display text-lg text-dust">{problem.title}</h2>}
-        <div className="mt-1 whitespace-pre-line font-display text-[1.35rem] leading-snug">
+        <div className="mt-1 whitespace-pre-line break-words font-display text-[1.35rem] leading-snug">
           <RichText text={problem.statement} />
         </div>
       </section>
@@ -178,8 +178,8 @@ export function Game({ sessionKey, isGuest, onNeedAccount }: Props) {
             const t = TILE[a.feedback ?? 'wrong'] ?? TILE.wrong
             return (
               <div key={i} className={`anim-pop flex h-14 items-center justify-between rounded-2xl px-4 ${t.cls}`}>
-                <span className="font-mono text-lg font-semibold">{a.answer_given}</span>
-                <span className="flex items-center gap-2 text-sm font-semibold">
+                <span className="min-w-0 truncate font-mono text-lg font-semibold">{a.answer_given}</span>
+                <span className="flex items-center gap-2 text-sm font-semibold whitespace-nowrap">
                   <span className="text-xl">{t.sym}</span>
                   {t.text}
                 </span>
@@ -312,7 +312,7 @@ export function Game({ sessionKey, isGuest, onNeedAccount }: Props) {
               <p className="text-xs uppercase tracking-widest text-dust">Respuesta</p>
               <p className="font-mono text-xl font-semibold">{solution.answer}</p>
               {solution.explanation && (
-                <div className="mt-2 whitespace-pre-line text-dust">
+                <div className="mt-2 whitespace-pre-line break-words text-dust">
                   <RichText text={solution.explanation} />
                 </div>
               )}

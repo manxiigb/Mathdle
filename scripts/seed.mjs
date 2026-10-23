@@ -21,12 +21,11 @@ function addDays(dateStr, n) {
   return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10)
 }
 
-const start = opt('start', addDays(today, 1)) // por defecto, desde mañana
-if (!/^\d{4}-\d{2}-\d{2}$/.test(start)) {
-  console.error('--start debe tener formato YYYY-MM-DD')
+const start = opt('start', null)
+if (!start || !/^\d{4}-\d{2}-\d{2}$/.test(start)) {
+  console.error('Indica la fecha del primer problema de la lista: --start=AAAA-MM-DD (siempre la misma)')
   process.exit(1)
 }
-
 // ---------- Leer y validar ----------
 let raw
 try {

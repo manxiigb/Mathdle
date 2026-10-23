@@ -8,7 +8,7 @@ import { StatsModal } from './components/StatsModal'
 import { supabase } from './lib/supabase'
 import { useAuth } from './lib/useAuth'
 
-type ModalName = 'howto' | 'stats' | 'login' | 'account' | null
+type ModalName = 'howto' | 'stats' | 'login' | 'signup' | 'account' | null
 
 function IconButton({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) {
   return (
@@ -65,11 +65,12 @@ export default function App() {
         </div>
       </header>
 
-      {ready && <Game sessionKey={sessionKey} isGuest={isGuest} onNeedAccount={() => setModal('login')} />}
+      {ready && <Game sessionKey={sessionKey} isGuest={isGuest} onNeedAccount={() => setModal('signup')} />}
 
       {modal === 'howto' && <HowToPlay onClose={close} />}
-      {modal === 'stats' && <StatsModal onClose={close} isGuest={isGuest} onNeedAccount={() => setModal('login')} />}
+      {modal === 'stats' && <StatsModal onClose={close} isGuest={isGuest} onNeedAccount={() => setModal('signup')} />}
       {modal === 'login' && <LoginModal onClose={close} />}
+      {modal === 'signup' && <LoginModal onClose={close} initialMode="signup" />}
       {modal === 'account' && (
         <Modal title="Tu cuenta" onClose={close}>
           <p className="mb-4 text-dust">{displayName}</p>

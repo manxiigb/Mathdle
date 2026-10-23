@@ -6,8 +6,14 @@ import { Modal } from './Modal'
 const input =
   'w-full rounded-2xl border border-edge bg-night px-4 py-3 text-base text-chalk outline-none placeholder:text-dust focus:border-gold'
 
-export function LoginModal({ onClose }: { onClose: () => void }) {
-  const [mode, setMode] = useState<'signup' | 'signin'>('signup')
+export function LoginModal({
+  onClose,
+  initialMode = 'signin',
+}: {
+  onClose: () => void
+  initialMode?: 'signin' | 'signup'
+}) {
+  const [mode, setMode] = useState<'signup' | 'signin'>(initialMode)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -99,12 +105,22 @@ export function LoginModal({ onClose }: { onClose: () => void }) {
         </p>
       )}
 
-      <button
-        className="mt-4 w-full text-sm text-dust underline"
-        onClick={() => { setMode(mode === 'signup' ? 'signin' : 'signup'); setError(null) }}
-      >
-        {mode === 'signup' ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Créala'}
-      </button>
+      {mode === 'signin' ? (
+        <button
+          className="mt-4 w-full rounded-2xl border border-edge py-3 text-sm font-semibold hover:bg-card-2"
+          onClick={() => { setMode('signup'); setError(null) }}
+        >
+          ¿No tienes cuenta? Regístrate
+        </button>
+      ) : (
+        <button
+          className="mt-4 w-full text-sm text-dust underline"
+          onClick={() => { setMode('signin'); setError(null) }}
+        >
+          ¿Ya tienes cuenta? Inicia sesión
+        </button>
+      )}
+
       <button className="mt-2 w-full text-sm text-dust/70" onClick={onClose}>
         Seguir como invitado
       </button>
